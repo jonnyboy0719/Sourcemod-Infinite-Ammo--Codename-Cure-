@@ -3,8 +3,6 @@
 #include <sourcemod>
 #include <sdktools>
 
-#define sInfo "\x01[\x07FF0000Info\x01]"
-
 new Handle:flGroup;
 new Handle:is_sourcebans;
 
@@ -24,7 +22,7 @@ public Plugin:myinfo = {
 	name 						= "Infinite Ammo",
 	author 						= "JonnyBoy0719",
 	description 				= "GO NUTS!",
-	version 					= "1.0",
+	version 					= "1.1",
 	url 						= ""
 }
 
@@ -36,12 +34,15 @@ public OnPluginStart()
 {
 	// Events
 	HookEvent("player_spawn", EVENT_PlayerSpawned);
+	
+	// Convars
 	flGroup = CreateConVar("sm_infa_group", "vip", "Set which group should have access. If empty, anyone have infinite ammo.");
 	is_sourcebans = CreateConVar("sm_infa_sourcebans", "0", "If the server is using Sourcebans, then you need to enable this", FCVAR_PLUGIN, true, 0.0, true, 1.0);
 	
 	// Lets create a config file
 	AutoExecConfig(true, "infinite_ammo");
 	
+	// Lets connect to the Database
 	DBConnect();
 }
 
@@ -55,15 +56,8 @@ void DBConnect()
 	if (GetConVarBool(is_sourcebans))
 		db = SQL_Connect("sourcebans", true, errors, sizeof(errors));
 	else
-	{
-		if (SQL_CheckConfig("prometheus"))
-		{
-			db = SQL_Connect("prometheus", true, errors, sizeof(errors));
-		} else {
-			db = SQL_Connect("default", true, errors, sizeof(errors));
-		}
-	}
-	if (db == null) LogError("[Prometheus] Unable to connect to MySQL database: %s", errors);
+		db = SQL_Connect("default", true, errors, sizeof(errors));
+	if (db == null) LogError("[Infinite Ammo] Unable to connect to MySQL database: %s", errors);
 }
 
 //=========================
@@ -108,7 +102,7 @@ public Action:InfiniteAmmoPls(Handle:timer, any:client)
 		{
 			if(!DontRepeat[client])
 				DontRepeat[client] = true;
-			SetInfiniteAmmo(client);
+			SetAmmo(client, 60);
 		}
 		else
 			return Plugin_Stop;
@@ -165,17 +159,17 @@ stock bool:IsValidClient(client, bool:bCheckAlive=true)
 }
 
 //=========================
-// SetInfiniteAmmo()
+// SetAmmo()
 //========================
 
-stock SetInfiniteAmmo(client){
+stock SetAmmo(client, ammo){
 	new activeWeapon = GetEntDataEnt2(client, FindSendPropInfo("CBasePlayer", "m_hActiveWeapon"));
 	if(activeWeapon != INVALID_ENT_REFERENCE)
-		SetEntData(activeWeapon, FindSendPropInfo("CBaseCombatWeapon", "m_iClip1"), 60);
+		SetEntData(activeWeapon, FindSendPropInfo("CBaseCombatWeapon", "m_iClip1"), ammo);
 }
 
 //=========================
-// Prometheus
+// IsValidGroup
 //========================
 
 bool IsValidGroup(authid, group)
@@ -190,7 +184,7 @@ bool IsValidGroup(authid, group)
 		{
 			char Error[1024];
 			SQL_GetError(db, Error, sizeof(Error));
-			LogError("[SourceBans] An error occurred while checking if valid group in the Database: %s", Error);
+			LogError("[Infinite Ammo | SourceBans] An error occurred while checking if valid group in the Database: %s", Error);
 			CloseHandle(hQry);
 			return false;
 		}// \x07f39c12
@@ -212,7 +206,7 @@ bool IsValidGroup(authid, group)
 		{
 			char Error[1024];
 			SQL_GetError(db, Error, sizeof(Error));
-			LogError("[Prometheus] An error occurred while checking if valid group in the Database: %s", Error);
+			LogError("[Infinite Ammo] An error occurred while checking if valid group in the Database: %s", Error);
 			CloseHandle(hQry);
 			return false;
 		}// \x07f39c12
@@ -226,6 +220,10 @@ bool IsValidGroup(authid, group)
 	return false;
 }
 
+//=========================
+// IsValidAdmin
+//========================
+
 bool IsValidAdmin(client, char[] authid)
 {
 	if (GetConVarBool(is_sourcebans))
@@ -238,7 +236,7 @@ bool IsValidAdmin(client, char[] authid)
 		{
 			char Error[1024];
 			SQL_GetError(db, Error, sizeof(Error));
-			LogError("[SourceBans] An error occurred while checking if valid admin in the Database: %s", Error);
+			LogError("[Infinite Ammo | SourceBans] An error occurred while checking if valid admin in the Database: %s", Error);
 			CloseHandle(hQry);
 			return false;
 		}
@@ -264,7 +262,7 @@ bool IsValidAdmin(client, char[] authid)
 		{
 			char Error[1024];
 			SQL_GetError(db, Error, sizeof(Error));
-			LogError("[Prometheus] An error occurred while checking if valid admin in the Database: %s", Error);
+			LogError("[Infinite Ammo] An error occurred while checking if valid admin in the Database: %s", Error);
 			CloseHandle(hQry);
 			return false;
 		}
@@ -282,6 +280,10 @@ bool IsValidAdmin(client, char[] authid)
 	return false;
 }
 
+//=========================
+// GetGroupID
+//========================
+
 bool GetGroupID(char[] group)
 {
 	if (GetConVarBool(is_sourcebans))
@@ -294,7 +296,7 @@ bool GetGroupID(char[] group)
 		{
 			char Error[1024];
 			SQL_GetError(db, Error, sizeof(Error));
-			LogError("[SourceBans] An error occurred while selecting group ID from the Database: %s", Error);
+			LogError("[Infinite Ammo | SourceBans] An error occurred while selecting group ID from the Database: %s", Error);
 			CloseHandle(hQry);
 			return false;
 		}
@@ -316,7 +318,7 @@ bool GetGroupID(char[] group)
 		{
 			char Error[1024];
 			SQL_GetError(db, Error, sizeof(Error));
-			LogError("[Prometheus] An error occurred while selecting group ID from the Database: %s", Error);
+			LogError("[Infinite Ammo] An error occurred while selecting group ID from the Database: %s", Error);
 			CloseHandle(hQry);
 			return false;
 		}
