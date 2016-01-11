@@ -96,7 +96,10 @@ public Action:InfiniteAmmoPls(Handle:timer, any:client)
 			return Plugin_Stop;
 		
 		if(!DontRepeat[client])
-			CheckDataBase(client);
+			if(!IsAdmin(client))
+				CheckDataBase(client);
+			else
+				access[client] = true;
 		
 		if(access[client])
 		{
@@ -159,6 +162,21 @@ stock bool:IsValidClient(client, bool:bCheckAlive=true)
 }
 
 //=========================
+// bool:IsValidClient()
+//========================
+
+stock bool:IsAdmin(client)
+{
+	if (GetAdminFlag(GetUserAdmin(client), ADMFLAG_GENERIC))
+		return true;
+
+	if (GetAdminFlag(GetUserAdmin(client), ADMFLAG_ROOT))
+		return true;
+
+    return false;
+}
+
+//=========================
 // SetAmmo()
 //========================
 
@@ -187,7 +205,7 @@ bool IsValidGroup(authid, group)
 			LogError("[Infinite Ammo | SourceBans] An error occurred while checking if valid group in the Database: %s", Error);
 			CloseHandle(hQry);
 			return false;
-		}// \x07f39c12
+		}
 		if (SQL_FetchRow(hQry)) 
 		{
 			CloseHandle(hQry);
@@ -209,7 +227,7 @@ bool IsValidGroup(authid, group)
 			LogError("[Infinite Ammo] An error occurred while checking if valid group in the Database: %s", Error);
 			CloseHandle(hQry);
 			return false;
-		}// \x07f39c12
+		}
 		if (SQL_FetchRow(hQry)) 
 		{
 			CloseHandle(hQry);
@@ -290,7 +308,7 @@ bool GetGroupID(char[] group)
 	{
 		Handle hQry = null;
 		char query[100];
-		Format(query, sizeof(query), "SELECT gid FROM sb_groups WHERE name = '%s'", group);
+		Format(query, sizeof(query), "SELECT id FROM sb_srvgroups WHERE name = '%s'", group);
 		hQry = SQL_Query(db, query);
 		if (hQry == null)
 		{
